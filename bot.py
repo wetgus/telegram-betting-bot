@@ -22,13 +22,14 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     # Handle the button clicks
     if query.data == 'create_bet':
-        await query.message.reply_text("You clicked Create Bet! Please use the command /create_bet.")
+        await create_bet(update, context)  # Call the create_bet function directly
     elif query.data == 'view_bets':
-        await query.message.reply_text("You clicked View Bets! Please use the command /view_bets.")
+        await view_bets(update, context)  # Call the view_bets function directly
     elif query.data == 'accept_bet':
-        await query.message.reply_text("You clicked Accept Bet! Please use the command /accept_bet.")
+        await accept_bet(update, context)  # Call the accept_bet function directly
     elif query.data == 'calculate_result':
-        await query.message.reply_text("You clicked Calculate Result! Please use the command /calculate_result.")
+        await calculate_result(update, context)  # Call the calculate_result function directly
+
 
 # Main function to run the bot
 def main():
