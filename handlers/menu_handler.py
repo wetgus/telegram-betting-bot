@@ -16,4 +16,3 @@ def help_command(update: Update, context: CallbackContext):
 
 def cancel(update: Update, context: CallbackContext):
     update.message.reply_text("Operation cancelled.")
-
