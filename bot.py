@@ -1,34 +1,50 @@
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, MessageHandler, filters, ConversationHandler
-from handlers.menu_handler import start, help_command, cancel
-from handlers.create_bet_handler import create_bet, bet_description, bet_amount, view_bets, BET_DESCRIPTION, BET_AMOUNT
-from config import API_TOKEN  # Import the API token from config.py
+import logging
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
+from config import API_TOKEN
+from handlers.start_handler import start
+from handlers.create_bet_handler import create_bet
+from handlers.view_bets_handler import view_bets
+from handlers.accept_bet_handler import accept_bet
+from handlers.calculate_result_handler import calculate_result
 
+# Initialize global variable to store bets
+bets = {}
+
+# Configure logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# Function to handle button clicks
+async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()  # Acknowledge the callback
+
+    # Handle the button clicks
+    if query.data == 'create_bet':
+        await query.message.reply_text("You clicked Create Bet! Please use the command /create_bet.")
+    elif query.data == 'view_bets':
+        await query.message.reply_text("You clicked View Bets! Please use the command /view_bets.")
+    elif query.data == 'accept_bet':
+        await query.message.reply_text("You clicked Accept Bet! Please use the command /accept_bet.")
+    elif query.data == 'calculate_result':
+        await query.message.reply_text("You clicked Calculate Result! Please use the command /calculate_result.")
+
+# Main function to run the bot
 def main():
-    # Create the Application object
-    application = ApplicationBuilder().token(API_TOKEN).build()  # Use the token from config.py
+    app = ApplicationBuilder().token(API_TOKEN).build()
+    
+    logger.info("Bot is starting...")  # Log when the bot starts
+    
+    # Add command handlers
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button))  # Register callback query handler
+    app.add_handler(CommandHandler("create_bet", create_bet))
+    app.add_handler(CommandHandler("view_bets", view_bets))  # Add view_bets handler
+    app.add_handler(CommandHandler("accept_bet", accept_bet))
+    app.add_handler(CommandHandler("calculate_result", calculate_result))
 
-    # Start command handler
-    application.add_handler(CommandHandler('start', start))
-
-    # Add conversation handler for bet creation
-    conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.Regex('^Create Bet$'), create_bet)],
-        states={
-            BET_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, bet_description)],
-            BET_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bet_amount)],
-        },
-        fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)]
-    )
-
-    application.add_handler(conv_handler)
-
-    # Add other menu options
-    application.add_handler(MessageHandler(filters.Regex('^View Bets$'), view_bets))
-    application.add_handler(MessageHandler(filters.Regex('^Help$'), help_command))
-    application.add_handler(MessageHandler(filters.Regex('^Cancel$'), cancel))
-
-    application.run_polling()  # Start polling for updates
+    app.run_polling()
 
 if __name__ == '__main__':
     main()
