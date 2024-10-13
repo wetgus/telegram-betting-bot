@@ -1,11 +1,16 @@
 from telegram import Update
 from telegram.ext import ContextTypes
+from config import ADMIN_USER_ID  # Import the admin user ID
 
 # Import the global bets variable
 from handlers.create_bet_handler import bets
 
 async def view_bets(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """View all created bets."""
+    if update.effective_user.id != ADMIN_USER_ID:  # Check if user is admin
+        await update.callback_query.answer("You do not have permission to view the bets.")
+        return
+
     if not bets:
         await update.callback_query.message.reply_text("No bets have been created yet.")
     else:
