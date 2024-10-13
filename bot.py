@@ -1,5 +1,5 @@
 from telegram import Update
-from telegram.ext import Updater, CommandHandler, MessageHandler, Filters, ConversationHandler
+from telegram.ext import Updater, CommandHandler, MessageHandler, filters, ConversationHandler
 from Handlers.menu_handler import start, help_command, cancel
 from Handlers.create_bet_handler import create_bet, bet_description, bet_amount, view_bets, BET_DESCRIPTION, BET_AMOUNT
 from config import API_TOKEN  # Import the API token from config.py
