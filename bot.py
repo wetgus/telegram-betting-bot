@@ -1,5 +1,10 @@
+import logging
 from telegram import Update
 from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+
+# Configure logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Dictionary to hold bets
 bets = {}
@@ -68,8 +73,10 @@ async def calculate_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Main function to run the bot
 def main():
-    api_token = '7890352951:AAGL59jcPMgHDrCLL3HDPVDRSWPQrDuYYR0'  # Replace with your actual API token
+    api_token = 'YOUR_API_TOKEN'  # Replace with your actual API token
     app = ApplicationBuilder().token(api_token).build()
+    
+    logger.info("Bot is starting...")  # Log when the bot starts
     
     # Add command handlers
     app.add_handler(CommandHandler("start", start))
