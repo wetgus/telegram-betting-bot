@@ -13,20 +13,20 @@ def main():
 
     # Add conversation handler for bet creation
     conv_handler = ConversationHandler(
-        entry_points=[MessageHandler(filters.regex('^Create Bet$'), create_bet)],
+        entry_points=[MessageHandler(filters.Regex('^Create Bet$'), create_bet)],
         states={
-            BET_DESCRIPTION: [MessageHandler(filters.text & ~filters.command, bet_description)],
-            BET_AMOUNT: [MessageHandler(filters.text & ~filters.command, bet_amount)],
+            BET_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, bet_description)],
+            BET_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, bet_amount)],
         },
-        fallbacks=[MessageHandler(filters.regex('^Cancel$'), cancel)]
+        fallbacks=[MessageHandler(filters.Regex('^Cancel$'), cancel)]
     )
 
     application.add_handler(conv_handler)
 
     # Add other menu options
-    application.add_handler(MessageHandler(filters.regex('^View Bets$'), view_bets))
-    application.add_handler(MessageHandler(filters.regex('^Help$'), help_command))
-    application.add_handler(MessageHandler(filters.regex('^Cancel$'), cancel))
+    application.add_handler(MessageHandler(filters.Regex('^View Bets$'), view_bets))
+    application.add_handler(MessageHandler(filters.Regex('^Help$'), help_command))
+    application.add_handler(MessageHandler(filters.Regex('^Cancel$'), cancel))
 
     application.run_polling()  # Start polling for updates
 
