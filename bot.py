@@ -68,7 +68,7 @@ async def calculate_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # Main function to run the bot
 def main():
-    api_token = 'YOUR_API_TOKEN'  # Replace with your actual API token
+    api_token = '7890352951:AAGL59jcPMgHDrCLL3HDPVDRSWPQrDuYYR0'  # Replace with your actual API token
     app = ApplicationBuilder().token(api_token).build()
     
     # Add command handlers
