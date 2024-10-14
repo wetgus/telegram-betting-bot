@@ -31,24 +31,37 @@ async def create_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = update.message.text
 
     if user_id not in user_state:
-        # Step 1: Ask for the bet description
-        await update.message.reply_text("Please enter the bet description:")
+        # Step 1: Ask for the bet description with validation guidelines
+        await update.message.reply_text(
+            "Please enter the bet description (1 to 200 characters):"
+        )
         user_state[user_id] = {"step": "awaiting_description"}
         return
 
     if user_state[user_id]["step"] == "awaiting_description":
-        # Step 2: Store the description and ask for the amount
+        # Step 2: Validate the description
+        if len(message) < 1 or len(message) > 200:
+            await update.message.reply_text(
+                "Invalid description. Please ensure the description is between 1 and 200 characters."
+            )
+            return
+
+        # Store the description and ask for the amount with validation guidelines
         user_state[user_id]["description"] = message
         user_state[user_id]["step"] = "awaiting_amount"
-        await update.message.reply_text("Please enter the bet amount:")
+        await update.message.reply_text("Please enter the bet amount (integer between 1 and 100):")
         return
 
     if user_state[user_id]["step"] == "awaiting_amount":
-        # Step 3: Store the amount and create the bet
+        # Step 3: Validate the amount
         try:
-            amount = float(message)  # Validate amount as a number
+            amount = int(message)
+            if amount < 1 or amount > 100:
+                raise ValueError
         except ValueError:
-            await update.message.reply_text("Please enter a valid number for the bet amount:")
+            await update.message.reply_text(
+                "Invalid amount. Please enter a whole number between 1 and 100."
+            )
             return
 
         # Generate unique bet ID
@@ -75,4 +88,3 @@ async def create_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         # Clear user state
         del user_state[user_id]
-
