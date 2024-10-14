@@ -1,69 +1,47 @@
-import json
-import os
 import uuid
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
-
-bets_file = "bets.json"
+from firebase_admin import db
 
 # Define states for ConversationHandler
 DESCRIPTION, AMOUNT = range(2)
 
-# Check if bets.json exists, if not create it
-if not os.path.exists(bets_file):
-    with open(bets_file, 'w') as f:
-        json.dump([], f)
+# Function to write bets to Firebase
+def write_bet_to_firebase(bet):
+    ref = db.reference('bets')
+    ref.push(bet)
 
-# Function to read bets from the JSON file
-def read_bets():
-    with open(bets_file, 'r') as f:
-        return json.load(f)
-
-# Function to write a new bet to the JSON file
-def write_bet(bet):
-    bets = read_bets()
-    bets.append(bet)
-    with open(bets_file, 'w') as f:
-        json.dump(bets, f, indent=4)
-
+# Function to start the bet creation process
 async def start_create_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Initiates the bet creation process."""
     await update.message.reply_text(
         "Please enter the bet description (1 to 200 characters):"
     )
     return DESCRIPTION
 
+# Function to handle bet description input
 async def enter_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Validates the bet description and asks for the bet amount."""
     description = update.message.text
-
     if len(description) < 1 or len(description) > 200:
-        await update.message.reply_text(
-            "Invalid description. Please ensure the description is between 1 and 200 characters."
-        )
+        await update.message.reply_text("Invalid description. Please enter between 1 and 200 characters.")
         return DESCRIPTION
-
     context.user_data['description'] = description
     await update.message.reply_text("Please enter the bet amount (integer between 1 and 100):")
     return AMOUNT
 
+# Function to handle bet amount input and save to Firebase
 async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Validates the bet amount, saves the bet, and confirms with the user."""
     try:
         amount = int(update.message.text)
         if amount < 1 or amount > 100:
             raise ValueError
     except ValueError:
-        await update.message.reply_text(
-            "Invalid amount. Please enter a whole number between 1 and 100."
-        )
+        await update.message.reply_text("Invalid amount. Enter a number between 1 and 100.")
         return AMOUNT
 
     description = context.user_data['description']
     bet_id = str(uuid.uuid4())
     user_id = update.message.from_user.id
 
-    # Create the bet record
     bet = {
         "bet_id": bet_id,
         "description": description,
@@ -73,8 +51,8 @@ async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "username": update.message.from_user.username
     }
 
-    # Save to JSON file
-    write_bet(bet)
+    # Save the bet to Firebase
+    write_bet_to_firebase(bet)
 
     # Acknowledge the user
     await update.message.reply_text(
@@ -83,8 +61,8 @@ async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     return ConversationHandler.END
 
+# Function to cancel the bet creation process
 async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    """Cancels the bet creation process."""
     await update.message.reply_text("Bet creation process canceled.")
     return ConversationHandler.END
 
