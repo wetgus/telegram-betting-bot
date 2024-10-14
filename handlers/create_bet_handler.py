@@ -13,8 +13,8 @@ BET_DESCRIPTION, BET_AMOUNT = range(2)
 
 # Connect to MongoDB
 client = MongoClient(MONGODB_URI)
-db = client[DB_NAME]
-bets_collection = db[BETS_COLLECTION]
+db = client[MONGODB_DATABASE]
+bets_collection = db[MONGODB_COLLECTION]
 
 async def start(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text("Enter bet description (1 to 200 symbols):")
