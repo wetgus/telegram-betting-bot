@@ -20,15 +20,21 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()  # Acknowledge the callback
 
+    logger.info(f"User {query.from_user.username} clicked a button: {query.data}")  # Log button click
+
     # Handle the button clicks
-    if query.data == 'create_bet':
-        await query.message.reply_text("You clicked Create Bet! Please use the command /create_bet.")
-    elif query.data == 'view_bets':
-        await query.message.reply_text("You clicked View Bets! Please use the command /view_bets.")
-    elif query.data == 'accept_bet':
-        await query.message.reply_text("You clicked Accept Bet! Please use the command /accept_bet.")
-    elif query.data == 'calculate_result':
-        await query.message.reply_text("You clicked Calculate Result! Please use the command /calculate_result.")
+    try:
+        if query.data == 'create_bet':
+            await query.message.reply_text("You clicked Create Bet! Please use the command /create_bet.")
+        elif query.data == 'view_bets':
+            await query.message.reply_text("You clicked View Bets! Please use the command /view_bets.")
+        elif query.data == 'accept_bet':
+            await query.message.reply_text("You clicked Accept Bet! Please use the command /accept_bet.")
+        elif query.data == 'calculate_result':
+            await query.message.reply_text("You clicked Calculate Result! Please use the command /calculate_result.")
+        logger.info(f"Handled button action: {query.data}")
+    except Exception as e:
+        logger.error(f"Error processing button click {query.data}: {str(e)}")
 
 # Main function to run the bot
 def main():
@@ -44,7 +50,11 @@ def main():
     app.add_handler(CommandHandler("accept_bet", accept_bet))
     app.add_handler(CommandHandler("calculate_result", calculate_result))
 
-    app.run_polling()
+    try:
+        app.run_polling()
+        logger.info("Bot is running...")
+    except Exception as e:
+        logger.error(f"Bot encountered an error: {str(e)}")
 
 if __name__ == '__main__':
     main()
