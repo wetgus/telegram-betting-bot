@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 BET_DESCRIPTION, BET_AMOUNT = range(2)
 
 # Connect to MongoDB
-client = MongoClient(MONGO_URI)
+client = MongoClient(MONGODB_URI)
 db = client[DB_NAME]
 bets_collection = db[BETS_COLLECTION]
 
