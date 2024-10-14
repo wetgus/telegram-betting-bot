@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # MongoDB setup
-client = MongoClient("mongodb+srv://wetgusbetting:<db_password>@cluster0.3gl5y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+client = MongoClient("mongodb+srv://wetgusbetting:TkfsEmL75Ue9aa8V@cluster0.3gl5y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
 db = client["BetsBot"]  # Replace with your database name
 bets_collection = db["Bets"]
 
