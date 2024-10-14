@@ -2,6 +2,7 @@ import uuid
 from telegram import Update
 from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
 from firebase_admin import db
+from config import ADMIN_USER_ID  # Importing admin user ID
 
 # Define states for ConversationHandler
 DESCRIPTION, AMOUNT = range(2)
