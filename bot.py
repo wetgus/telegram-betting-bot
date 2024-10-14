@@ -1,25 +1,24 @@
+# bot.py
 import logging
-import firebase_admin
-from firebase_admin import credentials, db
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
-from config import API_TOKEN, FIREBASE_KEY_PATH, FIREBASE_DATABASE_URL
+from config import API_TOKEN
 from handlers.create_bet_handler import create_bet_conv_handler
 from handlers.start_handler import start
 from handlers.view_bets_handler import view_bets
 from handlers.accept_bet_handler import accept_bet
 from handlers.calculate_result_handler import calculate_result
+from pymongo import MongoClient
 
 # Configure logging
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Initialize Firebase
-cred = credentials.Certificate(FIREBASE_KEY_PATH)
-firebase_admin.initialize_app(cred, {
-    'databaseURL': FIREBASE_DATABASE_URL
-})
+# MongoDB setup
+client = MongoClient("mongodb+srv://wetgusbetting:<db_password>@cluster0.3gl5y.mongodb.net/?retryWrites=true&w=majority")
+db = client['betting_database']  # Replace with your database name
+bets_collection = db['bets']  # Replace with your collection name
 
-# Function to handle button clicks (unchanged)
+# Function to handle button clicks
 async def button(update, context):
     query = update.callback_query
     await query.answer()
