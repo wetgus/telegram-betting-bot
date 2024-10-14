@@ -16,8 +16,8 @@ async def button(update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == 'create_bet':
-        # Directly invoke the /create_bet command handler
-        await create_bet_conv_handler.start(update, context)  # Pass the context to the start method
+        # Send a command that initiates the conversation
+        await context.bot.send_message(chat_id=query.message.chat_id, text="/create_bet")
     elif query.data == 'view_bets':
         await query.message.reply_text("You clicked View Bets! Please use the command /view_bets.")
     elif query.data == 'accept_bet':
