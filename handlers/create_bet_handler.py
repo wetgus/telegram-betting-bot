@@ -1,8 +1,12 @@
 import json
 import os
 import uuid
+import logging
 from telegram import Update
 from telegram.ext import ContextTypes
+
+# Set up logging to track the flow
+logger = logging.getLogger(__name__)
 
 bets_file = "bets.json"
 
@@ -30,30 +34,38 @@ async def create_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     message = update.message.text
 
+    logger.info(f"User {user_id} sent message: {message}")
+    
+    # Step 1: Check if user is starting the process
     if user_id not in user_state:
-        # Step 1: Ask for the bet description with validation guidelines
         await update.message.reply_text(
             "Please enter the bet description (1 to 200 characters):"
         )
         user_state[user_id] = {"step": "awaiting_description"}
+        logger.info(f"User {user_id} is now in step: awaiting_description")
         return
 
+    # Step 2: Handle description input and validate
     if user_state[user_id]["step"] == "awaiting_description":
-        # Step 2: Validate the description
+        logger.info(f"User {user_id} is in step: awaiting_description, entered: {message}")
+        
         if len(message) < 1 or len(message) > 200:
             await update.message.reply_text(
                 "Invalid description. Please ensure the description is between 1 and 200 characters."
             )
             return
 
-        # Store the description and ask for the amount with validation guidelines
+        # Store the description and ask for the amount
         user_state[user_id]["description"] = message
         user_state[user_id]["step"] = "awaiting_amount"
+        logger.info(f"User {user_id} entered valid description. Moving to awaiting_amount.")
         await update.message.reply_text("Please enter the bet amount (integer between 1 and 100):")
         return
 
+    # Step 3: Handle amount input and validate
     if user_state[user_id]["step"] == "awaiting_amount":
-        # Step 3: Validate the amount
+        logger.info(f"User {user_id} is in step: awaiting_amount, entered: {message}")
+        
         try:
             amount = int(message)
             if amount < 1 or amount > 100:
@@ -85,6 +97,8 @@ async def create_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await update.message.reply_text(
             f'Bet "{bet_description}" is accepted with {amount} on stake; your bet ID is "{bet_id}".'
         )
+
+        logger.info(f"Bet created for user {user_id}: {bet}")
 
         # Clear user state
         del user_state[user_id]
