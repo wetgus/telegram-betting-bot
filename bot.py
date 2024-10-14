@@ -1,5 +1,5 @@
 import logging
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from config import API_TOKEN
 from handlers.create_bet_handler import create_bet_conv_handler
 from handlers.start_handler import start
@@ -12,11 +12,12 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Function to handle button clicks
-async def button(update, context):
+async def button(update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     if query.data == 'create_bet':
-        await context.bot.send_message(chat_id=query.message.chat_id, text="/create_bet")
+        # Call the create_bet command handler directly
+        await create_bet_conv_handler.handle_update(update, context)
     elif query.data == 'view_bets':
         await query.message.reply_text("You clicked View Bets! Please use the command /view_bets.")
     elif query.data == 'accept_bet':
