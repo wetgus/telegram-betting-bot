@@ -3,5 +3,3 @@ __pycache__/
 *.pyo
 .vscode/
 .idea/
-firebase_key.json
-
