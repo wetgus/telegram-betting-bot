@@ -16,7 +16,7 @@ async def button(update, context):
     query = update.callback_query
     await query.answer()
     if query.data == 'create_bet':
-        await query.message.reply_text("You clicked Create Bet! Please use the command /create_bet.")
+        await context.bot.send_message(chat_id=query.message.chat_id, text="/create_bet")
     elif query.data == 'view_bets':
         await query.message.reply_text("You clicked View Bets! Please use the command /view_bets.")
     elif query.data == 'accept_bet':
