@@ -3,7 +3,7 @@ from datetime import datetime
 from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram import Update
 from pymongo import MongoClient
-from config import MONGODB_URI, DB_NAME, BETS_COLLECTION
+from config import MONGODB_URI, MONGODB_DATABASE, MONGODB_COLLECTION
 
 # Set up logging
 logger = logging.getLogger(__name__)
