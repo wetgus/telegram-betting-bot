@@ -1,6 +1,7 @@
 import logging
-from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
-from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ConversationHandler, ContextTypes
+import firebase_admin
+from firebase_admin import credentials, db
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 from config import API_TOKEN
 from handlers.create_bet_handler import create_bet_conv_handler
 from handlers.start_handler import start
@@ -12,12 +13,16 @@ from handlers.calculate_result_handler import calculate_result
 logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Function to handle button clicks
-async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()  # Acknowledge the callback
+# Initialize Firebase
+cred = credentials.Certificate('path_to_your/firebase_key.json')
+firebase_admin.initialize_app(cred, {
+    'databaseURL': 'https://<your-project-id>.firebaseio.com/'
+})
 
-    # Handle the button clicks
+# Function to handle button clicks (unchanged)
+async def button(update, context):
+    query = update.callback_query
+    await query.answer()
     if query.data == 'create_bet':
         await query.message.reply_text("You clicked Create Bet! Please use the command /create_bet.")
     elif query.data == 'view_bets':
@@ -30,17 +35,14 @@ async def button(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # Main function to run the bot
 def main():
     app = ApplicationBuilder().token(API_TOKEN).build()
-
     logger.info("Bot is starting...")
 
     # Add command handlers
     app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(button))  # Register callback query handler
-    app.add_handler(CommandHandler("view_bets", view_bets))  # Add view_bets handler
+    app.add_handler(CallbackQueryHandler(button))
+    app.add_handler(CommandHandler("view_bets", view_bets))
     app.add_handler(CommandHandler("accept_bet", accept_bet))
     app.add_handler(CommandHandler("calculate_result", calculate_result))
-    
-    # Add the conversation handler for create_bet
     app.add_handler(create_bet_conv_handler)
 
     app.run_polling()
