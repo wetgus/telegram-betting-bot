@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "bettingbot-6dbb1",
+  "private_key_id": "d006cc51476de7bb5e4eb803f466029f43231619",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDtEPhwwI7mVZ33\nQtOSUWuYvPNMIls+i6yiUlTGYznzQ0p8yRN8p9uDCE030AFP8qhhk1/jjhqh5Dmp\njCgUkYn1+TytfEPVR/VeECqu4r6lDB3nTKYImnZloMZB+0r1OISkMhepkCT3ZI8t\nBfyOClbLkRQGeCts67ublqWr/lUcaSfU+RsxYZ5ZPEWI0oC1tflINoVYwAMhskB1\nzbhWtmgaCWHT8k7qDxryjfI1T6XRH8r54pILbmMlcEU7TrXqhN9gwvf682TM62I+\n+U8X8PskbjQARiZFW0A+qK+C1vDwQIgwLR79AdX3R1bOCLDCF4Ji8w2BZyU26U9Q\n4BsisN7jAgMBAAECggEAAOhuuyfRpEoxp6/G1amgKt6WY/VBujSYvappDrV0lFzu\nnRm8DF8sNQ1EFnGif6bjRDRnSpzRt0sDeYXC5YlFKP8CX3u5WsjCxNB1CWRu7Hzm\nZGtju2a0C2GZQMlwmQ3VXDeg5ZJawePNtJNwSy749CCjHf8501n3xvnFuqnns4sl\nq47b8+B9m9CDxLQmmUeRhufA39bYRyWH9qTfDh6MyiNn2JWvPvdyaoBdhzYL2wtw\nSqzwFcosglnp/+z3BuQe0xLepUpf5LZibsd8eevkaDVg7e5hoOYMBLYxD9Lt11BA\ntTQmGfhLpAhWHaynjq70BGXsxGLlGBu+S/QbC+z76QKBgQD+tu2WW3LnMugK8HYR\nduh+Z1KTCXMMObRX35r1f5Scxq9Ah7KoDWa74HggPy5ByENP4U+RcAXp10X/qk1v\n+2CML76cUZ/NsiVeZXu2P+1LF8Mc9do4ojcFXBFZig/NVyAgKJYnRgkk4t6iQGuw\nHT5zE/zgj6Y3H7KjWK8vImnb1QKBgQDuQz3+ebABSuuaPrDHihsw9gXUIKuylI2a\n5OaS6eSxICgrgcNk7EUMgn/cl7Y7JR5uvZE05p45iOOKEIfzd6k0ZVhHGX9CXMjt\nPoudhxCckXn+PyP2h+9HXs6kfWB4ARAQ3vBozgZZCDF6aBxBkv0P+FPW9CNfTGpG\nSV/WjP7D1wKBgFb5S4Mt0rxTS5yAozAvdA/FZBLFBT3Fbmka9ySg3bPyu+DC9SQg\n/1VjvmD0ce0QXrul6a91mu9QDJzSIAL+yObVXratwG1SSSREbsu6ZGJhyMPYxxzT\ndwojd+ElHWQ2Pcf9U9gxN+oadX7dlGfcdHiC+LQNGOp1rl/MZnUnwRHJAoGBAMxk\n2ODeSVPCjrzifMqgulTVKQjiAgkPkS7IoNh1V59vg6ZXCmUgntdtd/yoFUdFv4am\njtO/5wpaWUBOkCIXjAsLyaAsylQGvsNvPVwkyuZVkj6+sb5CvM0QEttfRwuLddnT\nNo/h9eYYtkFY4KyMSRWTJXEoPNP6/MxRE6s9hyw/AoGANdpnozat+Rvsya6HpAWt\nJ3R+oBoqkThtUOlTlRb2+HnfsOaUeAm+Ns0ku1ESxNoaq/gTkj6yPLSSGXK61QOe\n3RLrw64VkLFbpONLZQpM3L3CKkxjDbrjMv76MuYcYVcigyi4ssbYQK3jY5oNMCfn\nPQaHyY3LM7dKgbnaVEvylFo=\n-----END PRIVATE KEY-----\n",
+  "client_email": "firebase-adminsdk-1h3oq@bettingbot-6dbb1.iam.gserviceaccount.com",
+  "client_id": "108624771227742262553",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/firebase-adminsdk-1h3oq%40bettingbot-6dbb1.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
