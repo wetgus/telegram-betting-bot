@@ -1,5 +1,5 @@
 # create_bet_handler.py
-from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, Filters, CallbackContext
+from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram import Update
 
 # Define your states
@@ -16,8 +16,8 @@ async def start(update: Update, context: CallbackContext) -> int:
 create_bet_conv_handler = ConversationHandler(
     entry_points=[CommandHandler('create_bet', start)],
     states={
-        BET_TYPE: [MessageHandler(Filters.text & ~Filters.command, enter_bet_type)],
-        AMOUNT: [MessageHandler(Filters.text & ~Filters.command, enter_amount)],
+        BET_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_bet_type)],
+        AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_amount)],
     },
     fallbacks=[],
 )
