@@ -2,7 +2,7 @@ import logging
 import firebase_admin
 from firebase_admin import credentials, db
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
-from config import API_TOKEN
+from config import API_TOKEN, FIREBASE_KEY_PATH, FIREBASE_DATABASE_URL
 from handlers.create_bet_handler import create_bet_conv_handler
 from handlers.start_handler import start
 from handlers.view_bets_handler import view_bets
@@ -14,9 +14,9 @@ logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s
 logger = logging.getLogger(__name__)
 
 # Initialize Firebase
-cred = credentials.Certificate('path_to_your/firebase_key.json')
+cred = credentials.Certificate(FIREBASE_KEY_PATH)
 firebase_admin.initialize_app(cred, {
-    'databaseURL': 'https://<your-project-id>.firebaseio.com/'
+    'databaseURL': FIREBASE_DATABASE_URL
 })
 
 # Function to handle button clicks (unchanged)
