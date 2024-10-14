@@ -1,59 +1,68 @@
 import logging
-from pymongo import MongoClient
 from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram import Update
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+from config import MONGODB_URI, MONGODB_DATABASE, MONGODB_COLLECTION
 
-# Setup logging
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger(__name__)
+# Initialize MongoDB client
+client = MongoClient(MONGODB_URI, server_api=ServerApi('1'))
+db = client[MONGODB_DATABASE]
+bets_collection = db[MONGODB_COLLECTION]
 
-# MongoDB setup
-client = MongoClient("mongodb+srv://wetgusbetting:TkfsEmL75Ue9aa8V@cluster0.3gl5y.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
-db = client["BetsBot"]  # Replace with your database name
-bets_collection = db["Bets"]
-
-# Define the states
+# Define states for the conversation
 BET_TYPE, AMOUNT = range(2)
 
-# Function to handle entering the bet type
-async def enter_bet_type(update: Update, context: CallbackContext) -> int:
-    logger.info("Entering bet type...")
-    await update.message.reply_text("Please enter the type of bet:")
+# Start command
+async def start(update: Update, context: CallbackContext):
+    await update.message.reply_text("Welcome! Use /create_bet to start.")
+
+# Create bet conversation entry point
+async def enter_bet_type(update: Update, context: CallbackContext):
+    await update.message.reply_text("Enter the bet type:")
     return BET_TYPE
 
-# Function to handle entering the amount
-async def enter_amount(update: Update, context: CallbackContext) -> int:
-    logger.info("Bet type received: %s", update.message.text)
-    context.user_data['bet_type'] = update.message.text
-    await update.message.reply_text("Please enter the amount:")
+async def receive_bet_type(update: Update, context: CallbackContext):
+    bet_type = update.message.text
+    context.user_data['bet_type'] = bet_type
+    logging.info("Entering bet type...")
+    logging.info(f"Bet type received: {bet_type}")
+
+    await update.message.reply_text("Enter the amount:")
     return AMOUNT
 
-# Function to write bet to MongoDB
-async def write_bet_to_mongo(bet):
-    try:
-        bets_collection.insert_one(bet)
-        logger.info("Bet successfully saved to MongoDB: %s", bet)
-    except Exception as e:
-        logger.error("Failed to save bet to MongoDB: %s", e)
+async def receive_amount(update: Update, context: CallbackContext):
+    amount = update.message.text
+    bet_type = context.user_data['bet_type']
+    user_id = update.message.from_user.id
 
-# Function to handle the completion of the bet creation
-async def create_bet(update: Update, context: CallbackContext) -> int:
     bet = {
-        'bet_type': context.user_data['bet_type'],
-        'amount': update.message.text,
-        'user_id': update.message.from_user.id
+        'bet_type': bet_type,
+        'amount': amount,
+        'user_id': user_id
     }
-    logger.info("Creating bet with data: %s", bet)
-    await write_bet_to_mongo(bet)
-    await update.message.reply_text("Your bet has been created!")
+
+    logging.info("Creating bet with data: %s", bet)
+
+    # Save bet to MongoDB
+    await save_bet_to_db(bet)
+    
+    await update.message.reply_text("Bet created successfully!")
     return ConversationHandler.END
+
+async def save_bet_to_db(bet):
+    try:
+        result = bets_collection.insert_one(bet)
+        logging.info(f"Bet successfully saved to MongoDB: {bet}")
+    except Exception as e:
+        logging.error(f"Failed to save bet to MongoDB: {e}")
 
 # Define the conversation handler
 create_bet_conv_handler = ConversationHandler(
     entry_points=[CommandHandler('create_bet', enter_bet_type)],
     states={
-        BET_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_amount)],
-        AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, create_bet)],
+        BET_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_bet_type)],
+        AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_amount)],
     },
     fallbacks=[],
 )
