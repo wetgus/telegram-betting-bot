@@ -1,78 +1,66 @@
-import uuid
+# create_bet_handler.py
+import logging
 from telegram import Update
-from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
-from firebase_admin import db
-from config import ADMIN_USER_ID  # Importing admin user ID
+from telegram.ext import ContextTypes, ConversationHandler
+from pymongo import MongoClient
+from config import MONGODB_URI
 
-# Define states for ConversationHandler
-DESCRIPTION, AMOUNT = range(2)
+# MongoDB setup
+client = MongoClient(MONGODB_URI)
+db = client['your_database_name']  # Replace with your database name
+bets_collection = db['bets']  # Replace with your collection name
 
-# Function to write bets to Firebase
-def write_bet_to_firebase(bet):
-    ref = db.reference('bets')
-    ref.push(bet)
+# States
+AWAITING_DESCRIPTION, AWAITING_AMOUNT = range(2)
 
-# Function to start the bet creation process
-async def start_create_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text(
-        "Please enter the bet description (1 to 200 characters):"
-    )
-    return DESCRIPTION
+# Logger setup
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s', level=logging.INFO)
 
-# Function to handle bet description input
-async def enter_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    description = update.message.text
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text("Please enter the bet description (1 to 200 characters):")
+    return AWAITING_DESCRIPTION
+
+async def enter_description(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    description = update.message.text.strip()
+
     if len(description) < 1 or len(description) > 200:
-        await update.message.reply_text("Invalid description. Please enter between 1 and 200 characters.")
-        return DESCRIPTION
-    context.user_data['description'] = description
-    await update.message.reply_text("Please enter the bet amount (integer between 1 and 100):")
-    return AMOUNT
+        await update.message.reply_text("Invalid input. Please enter the bet description (1 to 200 characters):")
+        return AWAITING_DESCRIPTION
 
-# Function to handle bet amount input and save to Firebase
-async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    context.user_data['bet'] = {'description': description}
+    await update.message.reply_text("Please enter the bet amount (1 to 100):")
+    return AWAITING_AMOUNT
+
+async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    amount_text = update.message.text.strip()
+
     try:
-        amount = int(update.message.text)
+        amount = int(amount_text)
         if amount < 1 or amount > 100:
-            raise ValueError
+            raise ValueError("Amount must be between 1 and 100.")
     except ValueError:
-        await update.message.reply_text("Invalid amount. Enter a number between 1 and 100.")
-        return AMOUNT
+        await update.message.reply_text("Invalid input. Please enter the bet amount (1 to 100):")
+        return AWAITING_AMOUNT
 
-    description = context.user_data['description']
-    bet_id = str(uuid.uuid4())
-    user_id = update.message.from_user.id
-
-    bet = {
-        "bet_id": bet_id,
-        "description": description,
-        "amount": amount,
-        "date": update.message.date.isoformat(),
-        "user_id": user_id,
-        "username": update.message.from_user.username
-    }
-
-    # Save the bet to Firebase
-    write_bet_to_firebase(bet)
-
-    # Acknowledge the user
-    await update.message.reply_text(
-        f'Bet "{description}" is accepted with {amount} on stake; your bet ID is "{bet_id}".'
-    )
-
+    bet = context.user_data['bet']
+    bet['amount'] = amount
+    await write_bet_to_mongodb(bet)
+    await update.message.reply_text(f'Bet "{bet["description"]}" is accepted with {bet["amount"]} on stake.')
     return ConversationHandler.END
 
-# Function to cancel the bet creation process
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await update.message.reply_text("Bet creation process canceled.")
+async def write_bet_to_mongodb(bet):
+    bets_collection.insert_one(bet)
+
+def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    update.message.reply_text('Bet creation cancelled.')
     return ConversationHandler.END
 
-# Create the ConversationHandler to manage the conversation flow
-create_bet_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('create_bet', start_create_bet)],
+# Define the conversation handler
+create_bet_handler = ConversationHandler(
+    entry_points=[CommandHandler('create_bet', start)],
     states={
-        DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_description)],
-        AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_amount)],
+        AWAITING_DESCRIPTION: [MessageHandler(Filters.text & ~Filters.command, enter_description)],
+        AWAITING_AMOUNT: [MessageHandler(Filters.text & ~Filters.command, enter_amount)],
     },
-    fallbacks=[CommandHandler('cancel', cancel)]
+    fallbacks=[CommandHandler('cancel', cancel)],
 )
