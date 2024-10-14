@@ -6,8 +6,8 @@ from config import MONGODB_URI
 
 # MongoDB client setup
 client = MongoClient(MONGODB_URI)
-db = client['betting_database']  # Replace with your actual database name
-bets_collection = db['bets']      # Replace with your actual collection name
+db = client['BetsBot']  # Replace with your actual database name
+bets_collection = db['Bets']      # Replace with your actual collection name
 
 # Define conversation states
 BET_TYPE, AMOUNT = range(2)
