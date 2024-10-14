@@ -49,6 +49,7 @@ def main():
     app.add_handler(CommandHandler("view_bets", view_bets))  # Add view_bets handler
     app.add_handler(CommandHandler("accept_bet", accept_bet))
     app.add_handler(CommandHandler("calculate_result", calculate_result))
+    app.add_handler(create_bet_conv_handler)
 
     try:
         app.run_polling()
