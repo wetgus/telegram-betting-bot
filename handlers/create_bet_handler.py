@@ -1,68 +1,62 @@
 import logging
+from datetime import datetime
 from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram import Update
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
-from config import MONGODB_URI, MONGODB_DATABASE, MONGODB_COLLECTION
+from pymongo import MongoClient
+from config import MONGO_URI, DB_NAME, BETS_COLLECTION
 
-# Initialize MongoDB client
-client = MongoClient(MONGODB_URI, server_api=ServerApi('1'))
-db = client[MONGODB_DATABASE]
-bets_collection = db[MONGODB_COLLECTION]
+# Set up logging
+logger = logging.getLogger(__name__)
 
-# Define states for the conversation
-BET_TYPE, AMOUNT = range(2)
+# States for the conversation
+BET_DESCRIPTION, BET_AMOUNT = range(2)
 
-# Start command
-async def start(update: Update, context: CallbackContext):
-    await update.message.reply_text("Welcome! Use /create_bet to start.")
+# Connect to MongoDB
+client = MongoClient(MONGO_URI)
+db = client[DB_NAME]
+bets_collection = db[BETS_COLLECTION]
 
-# Create bet conversation entry point
-async def enter_bet_type(update: Update, context: CallbackContext):
-    await update.message.reply_text("Enter the bet type:")
-    return BET_TYPE
+async def start(update: Update, context: CallbackContext) -> int:
+    await update.message.reply_text("Enter bet description (1 to 200 symbols):")
+    return BET_DESCRIPTION
 
-async def receive_bet_type(update: Update, context: CallbackContext):
-    bet_type = update.message.text
-    context.user_data['bet_type'] = bet_type
-    logging.info("Entering bet type...")
-    logging.info(f"Bet type received: {bet_type}")
+async def enter_bet_description(update: Update, context: CallbackContext) -> int:
+    description = update.message.text
+    if 1 <= len(description) <= 200:
+        context.user_data['bet_description'] = description
+        await update.message.reply_text("Enter the amount: (1 to 100)")
+        return BET_AMOUNT
+    else:
+        await update.message.reply_text("Invalid input. Please enter a description between 1 to 200 symbols:")
+        return BET_DESCRIPTION
 
-    await update.message.reply_text("Enter the amount:")
-    return AMOUNT
-
-async def receive_amount(update: Update, context: CallbackContext):
+async def enter_bet_amount(update: Update, context: CallbackContext) -> int:
     amount = update.message.text
-    bet_type = context.user_data['bet_type']
-    user_id = update.message.from_user.id
-
-    bet = {
-        'bet_type': bet_type,
-        'amount': amount,
-        'user_id': user_id
-    }
-
-    logging.info("Creating bet with data: %s", bet)
-
-    # Save bet to MongoDB
-    await save_bet_to_db(bet)
-    
-    await update.message.reply_text("Bet created successfully!")
-    return ConversationHandler.END
-
-async def save_bet_to_db(bet):
     try:
-        result = bets_collection.insert_one(bet)
-        logging.info(f"Bet successfully saved to MongoDB: {bet}")
-    except Exception as e:
-        logging.error(f"Failed to save bet to MongoDB: {e}")
+        amount = int(amount)
+        if 1 <= amount <= 100:
+            bet_data = {
+                "bet_description": context.user_data['bet_description'],
+                "amount": amount,
+                "user_id": update.message.from_user.id,
+                "creation_date": datetime.now().isoformat()  # Add creation date
+            }
+            result = bets_collection.insert_one(bet_data)
+            logger.info(f"Bet successfully saved to MongoDB: {bet_data}")
+            await update.message.reply_text(f"Bet created successfully! BetID: {result.inserted_id}")
+            return ConversationHandler.END
+        else:
+            await update.message.reply_text("Invalid amount. Please enter an integer between 1 and 100:")
+            return BET_AMOUNT
+    except ValueError:
+        await update.message.reply_text("Invalid input. Please enter an integer between 1 and 100:")
+        return BET_AMOUNT
 
-# Define the conversation handler
 create_bet_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('create_bet', enter_bet_type)],
+    entry_points=[CommandHandler('create_bet', start)],
     states={
-        BET_TYPE: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_bet_type)],
-        AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, receive_amount)],
+        BET_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_bet_description)],
+        BET_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_bet_amount)],
     },
     fallbacks=[],
 )
