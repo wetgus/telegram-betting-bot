@@ -1,14 +1,13 @@
 import json
 import os
 import uuid
-import logging
 from telegram import Update
-from telegram.ext import ContextTypes
-
-# Set up logging to track the flow
-logger = logging.getLogger(__name__)
+from telegram.ext import ContextTypes, CommandHandler, MessageHandler, filters, ConversationHandler
 
 bets_file = "bets.json"
+
+# Define states for ConversationHandler
+DESCRIPTION, AMOUNT = range(2)
 
 # Check if bets.json exists, if not create it
 if not os.path.exists(bets_file):
@@ -27,78 +26,74 @@ def write_bet(bet):
     with open(bets_file, 'w') as f:
         json.dump(bets, f, indent=4)
 
-# Dictionary to store user input states
-user_state = {}
+async def start_create_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Initiates the bet creation process."""
+    await update.message.reply_text(
+        "Please enter the bet description (1 to 200 characters):"
+    )
+    return DESCRIPTION
 
-async def create_bet(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def enter_description(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Validates the bet description and asks for the bet amount."""
+    description = update.message.text
+
+    if len(description) < 1 or len(description) > 200:
+        await update.message.reply_text(
+            "Invalid description. Please ensure the description is between 1 and 200 characters."
+        )
+        return DESCRIPTION
+
+    context.user_data['description'] = description
+    await update.message.reply_text("Please enter the bet amount (integer between 1 and 100):")
+    return AMOUNT
+
+async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Validates the bet amount, saves the bet, and confirms with the user."""
+    try:
+        amount = int(update.message.text)
+        if amount < 1 or amount > 100:
+            raise ValueError
+    except ValueError:
+        await update.message.reply_text(
+            "Invalid amount. Please enter a whole number between 1 and 100."
+        )
+        return AMOUNT
+
+    description = context.user_data['description']
+    bet_id = str(uuid.uuid4())
     user_id = update.message.from_user.id
-    message = update.message.text
 
-    logger.info(f"User {user_id} sent message: {message}")
-    
-    # Step 1: Check if user is starting the process
-    if user_id not in user_state:
-        await update.message.reply_text(
-            "Please enter the bet description (1 to 200 characters):"
-        )
-        user_state[user_id] = {"step": "awaiting_description"}
-        logger.info(f"User {user_id} is now in step: awaiting_description")
-        return
+    # Create the bet record
+    bet = {
+        "bet_id": bet_id,
+        "description": description,
+        "amount": amount,
+        "date": update.message.date.isoformat(),
+        "user_id": user_id,
+        "username": update.message.from_user.username
+    }
 
-    # Step 2: Handle description input and validate
-    if user_state[user_id]["step"] == "awaiting_description":
-        logger.info(f"User {user_id} is in step: awaiting_description, entered: {message}")
-        
-        if len(message) < 1 or len(message) > 200:
-            await update.message.reply_text(
-                "Invalid description. Please ensure the description is between 1 and 200 characters."
-            )
-            return
+    # Save to JSON file
+    write_bet(bet)
 
-        # Store the description and ask for the amount
-        user_state[user_id]["description"] = message
-        user_state[user_id]["step"] = "awaiting_amount"
-        logger.info(f"User {user_id} entered valid description. Moving to awaiting_amount.")
-        await update.message.reply_text("Please enter the bet amount (integer between 1 and 100):")
-        return
+    # Acknowledge the user
+    await update.message.reply_text(
+        f'Bet "{description}" is accepted with {amount} on stake; your bet ID is "{bet_id}".'
+    )
 
-    # Step 3: Handle amount input and validate
-    if user_state[user_id]["step"] == "awaiting_amount":
-        logger.info(f"User {user_id} is in step: awaiting_amount, entered: {message}")
-        
-        try:
-            amount = int(message)
-            if amount < 1 or amount > 100:
-                raise ValueError
-        except ValueError:
-            await update.message.reply_text(
-                "Invalid amount. Please enter a whole number between 1 and 100."
-            )
-            return
+    return ConversationHandler.END
 
-        # Generate unique bet ID
-        bet_id = str(uuid.uuid4())
-        bet_description = user_state[user_id]["description"]
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    """Cancels the bet creation process."""
+    await update.message.reply_text("Bet creation process canceled.")
+    return ConversationHandler.END
 
-        # Create a bet record
-        bet = {
-            "bet_id": bet_id,
-            "description": bet_description,
-            "amount": amount,
-            "date": update.message.date.isoformat(),
-            "user_id": user_id,
-            "username": update.message.from_user.username
-        }
-
-        # Save the bet to the JSON file
-        write_bet(bet)
-
-        # Acknowledge the user
-        await update.message.reply_text(
-            f'Bet "{bet_description}" is accepted with {amount} on stake; your bet ID is "{bet_id}".'
-        )
-
-        logger.info(f"Bet created for user {user_id}: {bet}")
-
-        # Clear user state
-        del user_state[user_id]
+# Create the ConversationHandler to manage the conversation flow
+create_bet_conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('create_bet', start_create_bet)],
+    states={
+        DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_description)],
+        AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_amount)],
+    },
+    fallbacks=[CommandHandler('cancel', cancel)]
+)
