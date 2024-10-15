@@ -16,14 +16,18 @@ client = MongoClient(MONGODB_URI)
 db = client[MONGODB_DATABASE]
 bets_collection = db[MONGODB_COLLECTION]
 
-async def start(update: Update, context: CallbackContext) -> int:
+async def start(update: Update, context: CallbackContext) -> None:
     welcome_message = (
         "I am Atlaslive Sportsbook bot. Let's explore my functions:\n"
         "/create_bet - initiates bet creation\n"
+        "/balance - displays your current balance\n"
         "/help - shows available commands\n"
         # Add more commands and descriptions as needed
     )
     await update.message.reply_text(welcome_message)
+
+async def create_bet(update: Update, context: CallbackContext) -> int:
+    await update.message.reply_text("Enter bet description (1 to 200 symbols):")
     return BET_DESCRIPTION
 
 async def enter_bet_description(update: Update, context: CallbackContext) -> int:
@@ -59,10 +63,13 @@ async def enter_bet_amount(update: Update, context: CallbackContext) -> int:
         return BET_AMOUNT
 
 create_bet_conv_handler = ConversationHandler(
-    entry_points=[CommandHandler('create_bet', start)],
+    entry_points=[CommandHandler('create_bet', create_bet)],
     states={
         BET_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_bet_description)],
         BET_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_bet_amount)],
     },
     fallbacks=[],
 )
+
+# Add the command handler for /start in your main bot file
+start_handler = CommandHandler('start', start)
