@@ -68,16 +68,16 @@ async def select_outcome(update: Update, context: CallbackContext) -> int:
                         for outcome in match['outcomes']
                     ]
                     logger.debug(f"Outcomes for {match_name}: {match['outcomes']}")
-                    await query.message.reply_text("Please select an outcome:", 
-                                                    reply_markup=InlineKeyboardMarkup([outcome_buttons]))
+                    await query.edit_message_text("Please select an outcome:", 
+                                                   reply_markup=InlineKeyboardMarkup([outcome_buttons]))
                     return OUTCOME_SELECTION
 
-        await query.message.reply_text("No outcomes found for this match.")
+        await query.edit_message_text("No outcomes found for this match.")
         logger.warning(f"No outcomes found for match: {match_name}")
         return ConversationHandler.END
     except Exception as e:
         logger.error(f"Error fetching outcomes for match {match_name}: {e}")
-        await query.message.reply_text("Error fetching outcomes. Please try again later.")
+        await query.edit_message_text("Error fetching outcomes. Please try again later.")
         return ConversationHandler.END
 
 async def enter_bet_amount(update: Update, context: CallbackContext) -> int:
