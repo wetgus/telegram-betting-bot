@@ -1,11 +1,18 @@
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
 from telegram.ext import ConversationHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-from config import bets_collection, predefined_collection
+from config import MONGODB_DATABASE, MONGODB_COLLECTION, PREDEFINED_COLLECTION, MONGODB_URI
+from pymongo import MongoClient
 from bson import ObjectId
 import logging
 from datetime import datetime
 
 logger = logging.getLogger(__name__)
+
+# Initialize MongoDB client and collections
+client = MongoClient(MONGODB_URI)
+db = client[MONGODB_DATABASE]
+bets_collection = db[MONGODB_COLLECTION]
+predefined_collection = db[PREDEFINED_COLLECTION]
 
 # Define conversation states
 SELECT_SPORT, SELECT_MATCH, SELECT_OUTCOME, ENTER_AMOUNT = range(4)
