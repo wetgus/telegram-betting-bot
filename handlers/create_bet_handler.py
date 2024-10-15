@@ -17,7 +17,14 @@ db = client[MONGODB_DATABASE]
 bets_collection = db[MONGODB_COLLECTION]
 
 async def start(update: Update, context: CallbackContext) -> int:
-    await update.message.reply_text("Enter bet description (1 to 200 symbols):")
+    welcome_message = (
+        "I am Atlaslive Sportsbook bot. Let's explore my functions:\n"
+        "/create_bet - initiates bet creation\n"
+        "/balance - displays your current balance\n"
+        "/help - shows available commands\n"
+        # Add more commands and descriptions as needed
+    )
+    await update.message.reply_text(welcome_message)
     return BET_DESCRIPTION
 
 async def enter_bet_description(update: Update, context: CallbackContext) -> int:
