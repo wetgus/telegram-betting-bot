@@ -1,7 +1,7 @@
 import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from config import API_TOKEN
-from handlers.create_bet_handler import create_bet_conv_handler, create_bet  # Import the create_bet function
+from handlers.create_bet_handler import create_bet_conv_handler  # Keep this import only
 from handlers.start_handler import start
 from handlers.view_bets_handler import view_bets
 from handlers.accept_bet_handler import accept_bet
@@ -31,12 +31,12 @@ def main():
     logger.info("Bot is starting...")
 
     # Add command handlers
-    app.add_handler(CommandHandler("start", start))  # Display welcome message
-    app.add_handler(CallbackQueryHandler(button))  # Handle button clicks
-    app.add_handler(CommandHandler("view_bets", view_bets))  # View bets command
-    app.add_handler(CommandHandler("accept_bet", accept_bet))  # Accept bet command
-    app.add_handler(CommandHandler("calculate_result", calculate_result))  # Calculate result command
-    app.add_handler(create_bet_conv_handler)  # Bet creation conversation handler
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(CallbackQueryHandler(button))
+    app.add_handler(CommandHandler("view_bets", view_bets))
+    app.add_handler(CommandHandler("accept_bet", accept_bet))
+    app.add_handler(CommandHandler("calculate_result", calculate_result))
+    app.add_handler(create_bet_conv_handler)  # This is correct
 
     app.run_polling()
 
