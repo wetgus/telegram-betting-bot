@@ -1,141 +1,89 @@
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup, Update
-from telegram.ext import ConversationHandler, CallbackQueryHandler, MessageHandler, filters, ContextTypes
-from config import MONGODB_DATABASE, MONGODB_COLLECTION, PREDEFINED_COLLECTION, MONGODB_URI
-from pymongo import MongoClient
-from bson import ObjectId
 import logging
 from datetime import datetime
+from telegram import Update
+from telegram.ext import (ConversationHandler, CommandHandler, MessageHandler,
+                            filters, ContextTypes)
+from pymongo import MongoClient
+from config import MONGODB_URI, MONGODB_DATABASE, MONGODB_COLLECTION, PREDEFINED_COLLECTION
 
+# Set up logging
+logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    level=logging.INFO)
 logger = logging.getLogger(__name__)
-
-# Initialize MongoDB client and collections
-client = MongoClient(MONGODB_URI)
-db = client[MONGODB_DATABASE]
-bets_collection = db[MONGODB_COLLECTION]
-predefined_collection = db[PREDEFINED_COLLECTION]
 
 # Define conversation states
 SELECT_SPORT, SELECT_MATCH, SELECT_OUTCOME, ENTER_AMOUNT = range(4)
 
-# Function to start the conversation
+# Connect to MongoDB
+client = MongoClient(MONGODB_URI)
+db = client[MONGODB_DATABASE]
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    logger.info("User started creating a bet")
-    
-    sports = predefined_collection.distinct("sport")
+    await update.message.reply_text("You clicked Create Bet! Please select a sport:")
+    return await select_sport(update, context)
+
+async def select_sport(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    collection = db[PREDEFINED_COLLECTION]  # Access the predefined collection
+    sports_documents = await collection.find({}).to_list(None)  # Retrieve all documents
+    sports = [doc['sport_name'] for doc in sports_documents]  # Adjust according to your document structure
     
     if not sports:
         await update.message.reply_text("No sports available.")
         return ConversationHandler.END
 
-    keyboard = [[InlineKeyboardButton(sport, callback_data=sport)] for sport in sports]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await update.message.reply_text("Please select a sport:", reply_markup=reply_markup)
+    sports_message = "Please select a sport:\n" + "\n".join([f"/{sport}" for sport in sports])
     
-    return SELECT_SPORT
+    await update.message.reply_text(sports_message)
+    return SELECT_MATCH  # Move to the next state
 
-# Function to select a sport
-async def select_sport(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-
-    selected_sport = query.data
-    context.user_data['sport'] = selected_sport
-
-    matches = predefined_collection.distinct("match", {"sport": selected_sport})
-    
-    if not matches:
-        await query.edit_message_text(f"No matches available for {selected_sport}. Please try again.")
-        return SELECT_SPORT
-
-    keyboard = [[InlineKeyboardButton(match, callback_data=match)] for match in matches]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.edit_message_text(f"Sport selected: {selected_sport}\nPlease select a match:", reply_markup=reply_markup)
-    
-    return SELECT_MATCH
-
-# Function to select a match
 async def select_match(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-
-    selected_match = query.data
-    context.user_data['match'] = selected_match
-
-    outcomes = predefined_collection.distinct("outcome", {"match": selected_match})
-    
-    if not outcomes:
-        await query.edit_message_text(f"No outcomes available for {selected_match}. Please try again.")
-        return SELECT_MATCH
-
-    keyboard = [[InlineKeyboardButton(outcome, callback_data=outcome)] for outcome in outcomes]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
-    await query.edit_message_text(f"Match selected: {selected_match}\nPlease select an outcome:", reply_markup=reply_markup)
-    
+    # Here you can implement similar logic for selecting matches based on the chosen sport.
+    selected_sport = update.message.text.strip()[1:]  # Remove leading slash
+    await update.message.reply_text(f"You selected {selected_sport}. Now please select a match.")
+    # Logic for selecting a match goes here
     return SELECT_OUTCOME
 
-# Function to select an outcome
 async def select_outcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    query = update.callback_query
-    await query.answer()
-
-    selected_outcome = query.data
-    context.user_data['outcome'] = selected_outcome
-
-    await query.edit_message_text(f"Outcome selected: {selected_outcome}\nPlease enter the amount (1 to 100):")
-    
+    # Implement logic to select an outcome based on the selected match.
+    selected_match = update.message.text.strip()  # This should come from the previous state
+    await update.message.reply_text(f"You selected {selected_match}. Now please select an outcome.")
+    # Logic for selecting an outcome goes here
     return ENTER_AMOUNT
 
-# Function to enter the bet amount
 async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    amount_text = update.message.text
-    
-    if not amount_text.isdigit():
-        await update.message.reply_text("Invalid amount. Please enter a number between 1 and 100.")
-        return ENTER_AMOUNT
+    await update.message.reply_text("Enter the amount: (1 to 100)")
+    return ENTER_AMOUNT  # Wait for user input
 
-    amount = int(amount_text)
-    
-    if amount < 1 or amount > 100:
-        await update.message.reply_text("Amount out of range. Please enter a number between 1 and 100.")
-        return ENTER_AMOUNT
+async def save_bet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    user_id = update.message.from_user.id
+    amount = int(update.message.text)
+    creation_date = datetime.now()
 
-    context.user_data['amount'] = amount
-
-    # Create the bet and save it to MongoDB
     bet_data = {
-        "sport": context.user_data['sport'],
-        "match": context.user_data['match'],
-        "outcome": context.user_data['outcome'],
-        "amount": amount,
-        "user_id": update.message.from_user.id,
-        "creation_date": datetime.utcnow()
+        'user_id': user_id,
+        'amount': amount,
+        'creation_date': creation_date,
+        # Include sport, match, and outcome here after selection
     }
 
-    result = bets_collection.insert_one(bet_data)
-    
-    if result.inserted_id:
-        await update.message.reply_text(f"Bet created successfully! BetID: {result.inserted_id}")
-    else:
-        await update.message.reply_text("Failed to create bet. Please try again.")
-    
+    collection = db[MONGODB_COLLECTION]
+    result = await collection.insert_one(bet_data)
+
+    await update.message.reply_text(f"Bet created successfully! BetID: {result.inserted_id}")
     return ConversationHandler.END
 
-# Function to cancel the conversation
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Bet creation canceled.")
+def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+    await update.message.reply_text("Operation canceled.")
     return ConversationHandler.END
 
-# Create the conversation handler
-create_bet_conv_handler = ConversationHandler(
-    entry_points=[MessageHandler(filters.Command("create_bet"), start)],
-    states={
-        SELECT_SPORT: [CallbackQueryHandler(select_sport)],
-        SELECT_MATCH: [CallbackQueryHandler(select_match)],
-        SELECT_OUTCOME: [CallbackQueryHandler(select_outcome)],
-        ENTER_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_amount)]
-    },
-    fallbacks=[MessageHandler(filters.Regex('^/cancel$'), cancel)]
-)
+def create_bet_conv_handler() -> ConversationHandler:
+    return ConversationHandler(
+        entry_points=[CommandHandler('create_bet', start)],
+        states={
+            SELECT_SPORT: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_sport)],
+            SELECT_MATCH: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_match)],
+            SELECT_OUTCOME: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_outcome)],
+            ENTER_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_bet)],
+        },
+        fallbacks=[CommandHandler('cancel', cancel)],
+    )
