@@ -130,7 +130,7 @@ async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
 
 # Create the conversation handler
 create_bet_conv_handler = ConversationHandler(
-    entry_points=[MessageHandler(filters.CommandStart('create_bet'), start)],
+    entry_points=[MessageHandler(filters.Command("create_bet"), start)],
     states={
         SELECT_SPORT: [CallbackQueryHandler(select_sport)],
         SELECT_MATCH: [CallbackQueryHandler(select_match)],
