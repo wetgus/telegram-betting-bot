@@ -1,6 +1,7 @@
 import logging
 from datetime import datetime
-from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, CallbackContext
+from telegram.ext import (ConversationHandler, CommandHandler, 
+                            MessageHandler, filters, CallbackQueryHandler, ContextTypes)
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from pymongo import MongoClient
 from config import MONGODB_URI, MONGODB_DATABASE, PREDEFINED_COLLECTION
@@ -16,7 +17,7 @@ client = MongoClient(MONGODB_URI)
 db = client[MONGODB_DATABASE]
 markets_collection = db[PREDEFINED_COLLECTION]
 
-async def start(update: Update, context: CallbackContext) -> int:
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     # Fetch matches and outcomes from the Markets collection
     markets = markets_collection.find()  # Get all markets from the collection
     match_buttons = []
@@ -34,7 +35,7 @@ async def start(update: Update, context: CallbackContext) -> int:
     await update.message.reply_text("Please select a match:", reply_markup=reply_markup)
     return MATCH_SELECTION  # Go to the next state
 
-async def select_outcome(update: Update, context: CallbackContext) -> int:
+async def select_outcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     match_name = query.data
     await query.answer()
@@ -52,7 +53,7 @@ async def select_outcome(update: Update, context: CallbackContext) -> int:
         await query.message.reply_text("Match not found.")
         return ConversationHandler.END
 
-async def enter_bet_amount(update: Update, context: CallbackContext) -> int:
+async def enter_bet_amount(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     query = update.callback_query
     outcome = query.data
     await query.answer()
@@ -61,7 +62,7 @@ async def enter_bet_amount(update: Update, context: CallbackContext) -> int:
     await query.message.reply_text("Enter the amount (1 to 100):")
     return BET_AMOUNT  # Go to the next state
 
-async def finalize_bet(update: Update, context: CallbackContext) -> int:
+async def finalize_bet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     amount = update.message.text
     try:
         amount = int(amount)
