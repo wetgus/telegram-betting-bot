@@ -27,14 +27,17 @@ MATCH_SELECTION, OUTCOME_SELECTION, BET_AMOUNT = range(3)
 async def start(update: Update, context: CallbackContext) -> int:
     # Fetch matches from the Markets collection
     try:
-        matches = markets_collection.find({}, {"matches.name": 1})
-        match_buttons = [
-            InlineKeyboardButton(match['matches'][0]['name'], callback_data=f"match:{match['matches'][0]['name']}")
-            for match in matches if match.get('matches')
-        ]
+        matches = markets_collection.find({}, {"matches": 1})  # Fetch all matches
+        match_buttons = []
+        
+        for market in matches:
+            for match in market.get('matches', []):
+                match_buttons.append(InlineKeyboardButton(match['name'], callback_data=f"match:{match['name']}"))
         
         if match_buttons:
-            await update.message.reply_text("Please select a match:", reply_markup=InlineKeyboardMarkup([match_buttons]))
+            # Split the buttons into rows of 2 for better display
+            button_rows = [match_buttons[i:i + 2] for i in range(0, len(match_buttons), 2)]
+            await update.message.reply_text("Please select a match:", reply_markup=InlineKeyboardMarkup(button_rows))
             logger.debug("Match buttons sent to user.")
             return MATCH_SELECTION
         else:
