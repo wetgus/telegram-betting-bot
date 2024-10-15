@@ -1,87 +1,62 @@
 import logging
 from datetime import datetime
+from telegram.ext import ConversationHandler, CommandHandler, MessageHandler, filters, CallbackContext
 from telegram import Update
-from telegram.ext import (ConversationHandler, CommandHandler, MessageHandler,
-                            filters, ContextTypes)
 from pymongo import MongoClient
-from config import MONGODB_URI, MONGODB_DATABASE, MONGODB_COLLECTION, PREDEFINED_COLLECTION
+from config import MONGODB_URI, MONGODB_DATABASE, MONGODB_COLLECTION
 
 # Set up logging
-logging.basicConfig(format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-                    level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Define conversation states
-SELECT_SPORT, SELECT_MATCH, SELECT_OUTCOME, ENTER_AMOUNT = range(4)
+# States for the conversation
+BET_DESCRIPTION, BET_AMOUNT = range(2)
 
 # Connect to MongoDB
 client = MongoClient(MONGODB_URI)
 db = client[MONGODB_DATABASE]
+bets_collection = db[MONGODB_COLLECTION]
 
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("You clicked Create Bet! Please select a sport:")
-    return await select_sport(update, context)
+async def start(update: Update, context: CallbackContext) -> int:
+    await update.message.reply_text("Enter bet description (1 to 200 symbols):")
+    return BET_DESCRIPTION
 
-async def select_sport(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    collection = db[PREDEFINED_COLLECTION]  # Access the predefined collection
-    sports_documents = await collection.find({}).to_list(None)  # Retrieve all documents
-    sports = [doc['sport_name'] for doc in sports_documents]  # Adjust according to your document structure
-    
-    if not sports:
-        await update.message.reply_text("No sports available.")
-        return ConversationHandler.END
+async def enter_bet_description(update: Update, context: CallbackContext) -> int:
+    description = update.message.text
+    if 1 <= len(description) <= 200:
+        context.user_data['bet_description'] = description
+        await update.message.reply_text("Enter the amount: (1 to 100)")
+        return BET_AMOUNT
+    else:
+        await update.message.reply_text("Invalid input. Please enter a description between 1 to 200 symbols:")
+        return BET_DESCRIPTION
 
-    sports_message = "Please select a sport:\n" + "\n".join([f"/{sport}" for sport in sports])
-    
-    await update.message.reply_text(sports_message)
-    return SELECT_MATCH  # Move to the next state
+async def enter_bet_amount(update: Update, context: CallbackContext) -> int:
+    amount = update.message.text
+    try:
+        amount = int(amount)
+        if 1 <= amount <= 100:
+            bet_data = {
+                "bet_description": context.user_data['bet_description'],
+                "amount": amount,
+                "user_id": update.message.from_user.id,
+                "creation_date": datetime.now().isoformat()  # Add creation date
+            }
+            result = bets_collection.insert_one(bet_data)
+            logger.info(f"Bet successfully saved to MongoDB: {bet_data}")
+            await update.message.reply_text(f"Bet created successfully! BetID: {result.inserted_id}")
+            return ConversationHandler.END
+        else:
+            await update.message.reply_text("Invalid amount. Please enter an integer between 1 and 100:")
+            return BET_AMOUNT
+    except ValueError:
+        await update.message.reply_text("Invalid input. Please enter an integer between 1 and 100:")
+        return BET_AMOUNT
 
-async def select_match(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    selected_sport = update.message.text.strip()[1:]  # Remove leading slash
-    await update.message.reply_text(f"You selected {selected_sport}. Now please select a match.")
-    # Logic for selecting a match goes here
-    return SELECT_OUTCOME
-
-async def select_outcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    selected_match = update.message.text.strip()  # This should come from the previous state
-    await update.message.reply_text(f"You selected {selected_match}. Now please select an outcome.")
-    # Logic for selecting an outcome goes here
-    return ENTER_AMOUNT
-
-async def enter_amount(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Enter the amount: (1 to 100)")
-    return ENTER_AMOUNT  # Wait for user input
-
-async def save_bet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    user_id = update.message.from_user.id
-    amount = int(update.message.text)
-    creation_date = datetime.now()
-
-    bet_data = {
-        'user_id': user_id,
-        'amount': amount,
-        'creation_date': creation_date,
-        # Include sport, match, and outcome here after selection
-    }
-
-    collection = db[MONGODB_COLLECTION]
-    result = await collection.insert_one(bet_data)
-
-    await update.message.reply_text(f"Bet created successfully! BetID: {result.inserted_id}")
-    return ConversationHandler.END
-
-async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    await update.message.reply_text("Operation canceled.")
-    return ConversationHandler.END
-
-def create_bet_conv_handler() -> ConversationHandler:
-    return ConversationHandler(
-        entry_points=[CommandHandler('create_bet', start)],
-        states={
-            SELECT_SPORT: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_sport)],
-            SELECT_MATCH: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_match)],
-            SELECT_OUTCOME: [MessageHandler(filters.TEXT & ~filters.COMMAND, select_outcome)],
-            ENTER_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, save_bet)],
-        },
-        fallbacks=[CommandHandler('cancel', cancel)],
-    )
+create_bet_conv_handler = ConversationHandler(
+    entry_points=[CommandHandler('create_bet', start)],
+    states={
+        BET_DESCRIPTION: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_bet_description)],
+        BET_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, enter_bet_amount)],
+    },
+    fallbacks=[],
+)
