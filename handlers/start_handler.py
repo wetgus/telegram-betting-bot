@@ -10,5 +10,3 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "/balance - displays your current balance\n"
         "/help - shows available commands\n"
     )
-
-    await update.message.reply_text(welcome_message, reply_markup=reply_markup)
