@@ -37,14 +37,12 @@ async def select_sport(update: Update, context: ContextTypes.DEFAULT_TYPE) -> in
     return SELECT_MATCH  # Move to the next state
 
 async def select_match(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Here you can implement similar logic for selecting matches based on the chosen sport.
     selected_sport = update.message.text.strip()[1:]  # Remove leading slash
     await update.message.reply_text(f"You selected {selected_sport}. Now please select a match.")
     # Logic for selecting a match goes here
     return SELECT_OUTCOME
 
 async def select_outcome(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
-    # Implement logic to select an outcome based on the selected match.
     selected_match = update.message.text.strip()  # This should come from the previous state
     await update.message.reply_text(f"You selected {selected_match}. Now please select an outcome.")
     # Logic for selecting an outcome goes here
@@ -72,7 +70,7 @@ async def save_bet(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text(f"Bet created successfully! BetID: {result.inserted_id}")
     return ConversationHandler.END
 
-def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
+async def cancel(update: Update, context: ContextTypes.DEFAULT_TYPE) -> int:
     await update.message.reply_text("Operation canceled.")
     return ConversationHandler.END
 
