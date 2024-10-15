@@ -1,3 +1,5 @@
+# bot.py
+
 import logging
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 from config import API_TOKEN
@@ -17,7 +19,7 @@ async def button(update, context: ContextTypes.DEFAULT_TYPE):
     await query.answer()
     if query.data == 'create_bet':
         # Send a command that initiates the conversation
-        await context.bot.send_message(chat_id=query.message.chat_id, text="/create_bet")
+        await context.bot.send_message(chat_id=query.message.chat.id, text="/create_bet")
     elif query.data == 'view_bets':
         await query.message.reply_text("You clicked View Bets! Please use the command /view_bets.")
     elif query.data == 'accept_bet':
@@ -36,7 +38,7 @@ def main():
     app.add_handler(CommandHandler("view_bets", view_bets))
     app.add_handler(CommandHandler("accept_bet", accept_bet))
     app.add_handler(CommandHandler("calculate_result", calculate_result))
-    app.add_handler(create_bet_conv_handler)
+    app.add_handler(create_bet_conv_handler())  # Call the function to get the handler instance
 
     app.run_polling()
 
