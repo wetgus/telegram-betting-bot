@@ -106,4 +106,5 @@ create_bet_conv_handler = ConversationHandler(
         BET_AMOUNT: [MessageHandler(filters.TEXT & ~filters.COMMAND, finalize_bet)],
     },
     fallbacks=[],
+    per_message=True  # This parameter ensures tracking of the CallbackQueryHandler
 )
